@@ -24,7 +24,7 @@
 
 
 #import "MHFacebookImageViewer.h"
-#import "UIImageView+AFNetworking.h"
+#import <SDWebImage/UIImageView+WebCache.h>
 static const CGFloat kMinBlackMaskAlpha = 0.3f;
 static const CGFloat kMaxImageScale = 2.5f;
 static const CGFloat kMinImageScale = 1.0f;
@@ -106,14 +106,15 @@ static const CGFloat kMinImageScale = 1.0f;
         __block MHFacebookImageViewerCell * _justMeInsideTheBlock = self;
         __block UIScrollView * _scrollViewInsideBlock = __scrollView;
         
-        [__imageView setImageWithURLRequest:[NSURLRequest requestWithURL:imageURL] placeholderImage:defaultImage success:^(NSURLRequest *request, NSHTTPURLResponse *response, UIImage *image) {
-            [_scrollViewInsideBlock setZoomScale:1.0f animated:YES];
+		[__imageView setImageWithURL:imageURL placeholderImage:defaultImage options:SDWebImageRetryFailed completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType) {
+			if (error) {
+				NSLog(@"Image From URL Not loaded");
+				return;
+			}
+			[_scrollViewInsideBlock setZoomScale:1.0f animated:YES];
             [_imageViewInTheBlock setImage:image];
             _imageViewInTheBlock.frame = [_justMeInsideTheBlock centerFrameFromImage:_imageViewInTheBlock.image];
-            
-        } failure:^(NSURLRequest *request, NSHTTPURLResponse *response, NSError *error) {
-            NSLog(@"Image From URL Not loaded");
-        }];
+		}];
         
         if(_imageIndex==_initialIndex && !_isLoaded){
             __imageView.frame = _originalFrameRelativeToScreen;
