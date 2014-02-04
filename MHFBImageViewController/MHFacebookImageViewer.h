@@ -45,8 +45,8 @@ typedef void (^MHFacebookImageViewerClosingBlock)(void);
 @property (nonatomic,weak) MHFacebookImageViewerClosingBlock closingBlock;
 @property (nonatomic,weak) id<MHFacebookImageViewerDatasource> imageDatasource;
 @property (nonatomic,assign) NSInteger initialIndex;
-
-
+@property (nonatomic,assign) BOOL usesDoneButton;
++ (void)setUsesDoneButtonByDefault:(BOOL)usesDoneButton;
 - (void)presentFromRootViewController;
 - (void)presentFromViewController:(UIViewController *)controller;
 @end

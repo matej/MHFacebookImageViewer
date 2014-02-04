@@ -66,19 +66,6 @@ static const CGFloat kMinImageScale = 1.0f;
 
 @implementation MHFacebookImageViewerCell
 
-@synthesize originalFrameRelativeToScreen = _originalFrameRelativeToScreen;
-@synthesize rootViewController = _rootViewController;
-@synthesize viewController = _viewController;
-@synthesize blackMask = _blackMask;
-@synthesize closingBlock = _closingBlock;
-@synthesize openingBlock = _openingBlock;
-@synthesize doneButton = _doneButton;
-@synthesize senderView = _senderView;
-@synthesize imageIndex = _imageIndex;
-@synthesize superView = _superView;
-@synthesize defaultImage = _defaultImage;
-@synthesize initialIndex = _initialIndex;
-
 - (void) loadAllRequiredViews{
     self.selectionStyle = UITableViewCellSelectionStyleNone;
     CGRect frame = [UIScreen mainScreen].bounds;
@@ -348,26 +335,35 @@ static const CGFloat kMinImageScale = 1.0f;
 
 #pragma mark - Showing of Done Button if ever Zoom Scale is equal to 1
 - (void)didSingleTap:(UITapGestureRecognizer*)recognizer {
-    if(_doneButton.superview){
-        [self hideDoneButton];
-    }else {
-        if(__scrollView.zoomScale == __scrollView.minimumZoomScale){
-            if(!_isDoneAnimating){
-                _isDoneAnimating = YES;
-                [self.viewController.view addSubview:_doneButton];
-                _doneButton.alpha = 0.0f;
-                [UIView animateWithDuration:0.2f animations:^{
-                    _doneButton.alpha = 1.0f;
-                } completion:^(BOOL finished) {
-                    [self.viewController.view bringSubviewToFront:_doneButton];
-                    _isDoneAnimating = NO;
-                }];
-            }
-        }else if(__scrollView.zoomScale == __scrollView.maximumZoomScale) {
-            CGPoint pointInView = [recognizer locationInView:__imageView];
-            [self zoomInZoomOut:pointInView];
-        }
-    }
+	if (_doneButton) {
+		if(_doneButton.superview){
+			[self hideDoneButton];
+		}else {
+			if(__scrollView.zoomScale == __scrollView.minimumZoomScale){
+				if(!_isDoneAnimating){
+					_isDoneAnimating = YES;
+					[self.viewController.view addSubview:_doneButton];
+					_doneButton.alpha = 0.0f;
+					[UIView animateWithDuration:0.2f animations:^{
+						_doneButton.alpha = 1.0f;
+					} completion:^(BOOL finished) {
+						[self.viewController.view bringSubviewToFront:_doneButton];
+						_isDoneAnimating = NO;
+					}];
+				}
+			}else {
+				CGPoint pointInView = [recognizer locationInView:__imageView];
+				[self zoomInZoomOut:pointInView];
+			}
+		}
+	} else {
+		if(__scrollView.zoomScale == __scrollView.minimumZoomScale){
+			[self close:nil];
+		}else {
+			CGPoint pointInView = [recognizer locationInView:__imageView];
+			[self zoomInZoomOut:pointInView];
+		}
+	}
 }
 
 #pragma mark - Zoom in or Zoom out
@@ -391,7 +387,7 @@ static const CGFloat kMinImageScale = 1.0f;
 
 #pragma mark - Hide the Done Button
 - (void) hideDoneButton {
-    if(!_isDoneAnimating){
+    if(_doneButton && !_isDoneAnimating){
         if(_doneButton.superview) {
             _isDoneAnimating = YES;
             _doneButton.alpha = 1.0f;
@@ -419,7 +415,6 @@ static const CGFloat kMinImageScale = 1.0f;
     UITableView * _tableView;
     UIView *_blackMask;
     UIImageView * _imageView;
-    UIButton * _doneButton;
     UIView * _superView;
     
     CGPoint _panOrigin;
@@ -431,15 +426,29 @@ static const CGFloat kMinImageScale = 1.0f;
     UIStatusBarStyle _statusBarStyle;
 }
 
+@property (nonatomic, strong) UIButton *doneButton;
+
 @end
 
 @implementation MHFacebookImageViewer
-@synthesize rootViewController = _rootViewController;
-@synthesize imageURL = _imageURL;
-@synthesize openingBlock = _openingBlock;
-@synthesize closingBlock = _closingBlock;
-@synthesize senderView = _senderView;
-@synthesize initialIndex = _initialIndex;
+
+#pragma mark - Class
+
+static BOOL __usesDoneButtonByDefault = NO;
+
++ (void)setUsesDoneButtonByDefault:(BOOL)usesDoneButton {
+	__usesDoneButtonByDefault = usesDoneButton;
+}
+
+#pragma mark - Lifecycle
+
+- (id)init {
+    self = [super init];
+    if (self) {
+        _usesDoneButton = __usesDoneButtonByDefault;
+    }
+    return self;
+}
 
 #pragma mark - TableView datasource
 - (NSInteger) numberOfSectionsInTableView:(UITableView *)tableView {
@@ -468,7 +477,7 @@ static const CGFloat kMinImageScale = 1.0f;
         imageViewerCell.openingBlock = _openingBlock;
         imageViewerCell.superView = _senderView.superview;
         imageViewerCell.senderView = _senderView;
-        imageViewerCell.doneButton = _doneButton;
+        imageViewerCell.doneButton = _usesDoneButton ? self.doneButton : nil;
         imageViewerCell.initialIndex = _initialIndex;
         imageViewerCell.statusBarStyle = _statusBarStyle;
         [imageViewerCell loadAllRequiredViews];
@@ -533,17 +542,25 @@ static const CGFloat kMinImageScale = 1.0f;
     _blackMask.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
     [
      self.view insertSubview:_blackMask atIndex:0];
-    
-    _doneButton = [UIButton buttonWithType:UIButtonTypeCustom];
-	_doneButton.frame = CGRectMake(windowBounds.size.width - (51.0f + 9.0f),15.0f, 51.0f, 26.0f);
-	_doneButton.titleLabel.font = [UIFont systemFontOfSize:14.f];
-	_doneButton.backgroundColor = [UIColor colorWithWhite:0.f alpha:0.3];
-	[_doneButton setTitle:NSLocalizedString(@"Done", @"Facebook image viewver done button title") forState:UIControlStateNormal];
-	[_doneButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-	CALayer *doneButtonLayer = _doneButton.layer;
-	doneButtonLayer.cornerRadius = 5.f;
-	doneButtonLayer.borderColor = [UIColor whiteColor].CGColor;
-	doneButtonLayer.borderWidth = 1.f;
+}
+
+#pragma mark - Custom getters
+
+- (UIButton *)doneButton {
+	if (!_doneButton) {
+		CGRect windowBounds = [[UIScreen mainScreen] bounds];
+		_doneButton = [UIButton buttonWithType:UIButtonTypeCustom];
+		_doneButton.frame = CGRectMake(windowBounds.size.width - (51.0f + 9.0f),15.0f, 51.0f, 26.0f);
+		_doneButton.titleLabel.font = [UIFont systemFontOfSize:14.f];
+		_doneButton.backgroundColor = [UIColor colorWithWhite:0.f alpha:0.3];
+		[_doneButton setTitle:NSLocalizedString(@"Done", @"Facebook image viewver done button title") forState:UIControlStateNormal];
+		[_doneButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+		CALayer *doneButtonLayer = _doneButton.layer;
+		doneButtonLayer.cornerRadius = 5.f;
+		doneButtonLayer.borderColor = [UIColor whiteColor].CGColor;
+		doneButtonLayer.borderWidth = 1.f;
+	}
+	return _doneButton;
 }
 
 #pragma mark - Show
