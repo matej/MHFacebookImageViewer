@@ -29,6 +29,28 @@ static const CGFloat kMinBlackMaskAlpha = 0.3f;
 static const CGFloat kMaxImageScale = 2.5f;
 static const CGFloat kMinImageScale = 1.0f;
 
+@interface MHFacebookImageViewer()<UIGestureRecognizerDelegate,UIScrollViewDelegate,UITableViewDataSource,UITableViewDelegate>{
+    NSMutableArray *_gestures;
+    
+    UITableView * _tableView;
+    UIView *_blackMask;
+    UIImageView * _imageView;
+    UIView * _superView;
+    
+    CGPoint _panOrigin;
+    CGRect _originalFrameRelativeToScreen;
+    
+    BOOL _isAnimating;
+    BOOL _isDoneAnimating;
+    
+    UIStatusBarStyle _statusBarStyle;
+}
+
+@property (nonatomic, strong) UIButton *doneButton;
+@property (nonatomic, assign) BOOL prefersStatusBarHidden;
+
+@end
+
 @interface MHFacebookImageViewerCell : UITableViewCell<UIGestureRecognizerDelegate,UIScrollViewDelegate>{
     UIImageView * __imageView;
     UIScrollView * __scrollView;
@@ -44,7 +66,7 @@ static const CGFloat kMinImageScale = 1.0f;
 
 @property(nonatomic,assign) CGRect originalFrameRelativeToScreen;
 @property(nonatomic,weak) UIViewController * rootViewController;
-@property(nonatomic,weak) UIViewController * viewController;
+@property(nonatomic,weak) MHFacebookImageViewer * viewController;
 @property(nonatomic,weak) UIView * blackMask;
 @property(nonatomic,weak) UIButton * doneButton;
 @property(nonatomic,weak) UIImageView * senderView;
@@ -121,7 +143,13 @@ static const CGFloat kMinImageScale = 1.0f;
                         _openingBlock();
                 }
             }];
-            
+			
+			dispatch_async(dispatch_get_main_queue(), ^{
+				_viewController.prefersStatusBarHidden = YES;
+				[UIView animateWithDuration:0.4 animations:^{
+					[_viewController setNeedsStatusBarAppearanceUpdate];
+				}];
+			});
         }
         __imageView.userInteractionEnabled = YES;
         [self addPanGestureToView:__imageView];
@@ -188,6 +216,13 @@ static const CGFloat kMinImageScale = 1.0f;
     
     CGFloat yDiff = abs((y + __imageView.frame.size.height/2) - windowSize.height/2);
     _blackMask.alpha = MAX(1 - yDiff/(windowSize.height/2),kMinBlackMaskAlpha);
+	
+	if (panGesture.state == UIGestureRecognizerStateBegan) {
+		[UIView animateWithDuration:0.33 animations:^{
+			_viewController.prefersStatusBarHidden = NO;
+			[_viewController setNeedsStatusBarAppearanceUpdate];
+		}];
+	}
     
     if ((panGesture.state == UIGestureRecognizerStateEnded || panGesture.state == UIGestureRecognizerStateCancelled) && __scrollView.zoomScale == 1.0f) {
         
@@ -206,6 +241,8 @@ static const CGFloat kMinImageScale = 1.0f;
     [UIView animateWithDuration:0.2f delay:0.0f options:0 animations:^{
         __imageView.frame = [self centerFrameFromImage:__imageView.image];
         _blackMask.alpha = 1;
+		_viewController.prefersStatusBarHidden = YES;
+		[_viewController setNeedsStatusBarAppearanceUpdate];
     }   completion:^(BOOL finished) {
         if (finished) {
             _isAnimating = NO;
@@ -233,6 +270,9 @@ static const CGFloat kMinImageScale = 1.0f;
             CGAffineTransform transf = CGAffineTransformIdentity;
             _rootViewController.view.transform = CGAffineTransformScale(transf, 1.0f, 1.0f);
             _blackMask.alpha = 0.0f;
+			
+			_viewController.prefersStatusBarHidden = NO;
+			[_viewController setNeedsStatusBarAppearanceUpdate];
         } completion:^(BOOL finished) {
             if (finished) {
                 [_viewController.view removeFromSuperview];
@@ -409,26 +449,6 @@ static const CGFloat kMinImageScale = 1.0f;
 
 @end
 
-@interface MHFacebookImageViewer()<UIGestureRecognizerDelegate,UIScrollViewDelegate,UITableViewDataSource,UITableViewDelegate>{
-    NSMutableArray *_gestures;
-    
-    UITableView * _tableView;
-    UIView *_blackMask;
-    UIImageView * _imageView;
-    UIView * _superView;
-    
-    CGPoint _panOrigin;
-    CGRect _originalFrameRelativeToScreen;
-    
-    BOOL _isAnimating;
-    BOOL _isDoneAnimating;
-    
-    UIStatusBarStyle _statusBarStyle;
-}
-
-@property (nonatomic, strong) UIButton *doneButton;
-
-@end
 
 @implementation MHFacebookImageViewer
 
@@ -584,6 +604,7 @@ static BOOL __usesDoneButtonByDefault = NO;
     _senderView = nil;
     _imageDatasource = nil;
 }
+
 @end
 
 
@@ -682,6 +703,8 @@ static BOOL __usesDoneButtonByDefault = NO;
         }
     }
 }
+
+
 
 @end
 
