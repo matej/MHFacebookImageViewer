@@ -535,9 +535,15 @@ static const CGFloat kMinImageScale = 1.0f;
      self.view insertSubview:_blackMask atIndex:0];
     
     _doneButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [_doneButton setImageEdgeInsets:UIEdgeInsetsMake(-10, -10, -10, -10)];  // make click area bigger
-    [_doneButton setImage:[UIImage imageNamed:@"Done"] forState:UIControlStateNormal];
-    _doneButton.frame = CGRectMake(windowBounds.size.width - (51.0f + 9.0f),15.0f, 51.0f, 26.0f);
+	_doneButton.frame = CGRectMake(windowBounds.size.width - (51.0f + 9.0f),15.0f, 51.0f, 26.0f);
+	_doneButton.titleLabel.font = [UIFont systemFontOfSize:14.f];
+	_doneButton.backgroundColor = [UIColor colorWithWhite:0.f alpha:0.3];
+	[_doneButton setTitle:NSLocalizedString(@"Done", @"Facebook image viewver done button title") forState:UIControlStateNormal];
+	[_doneButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+	CALayer *doneButtonLayer = _doneButton.layer;
+	doneButtonLayer.cornerRadius = 5.f;
+	doneButtonLayer.borderColor = [UIColor whiteColor].CGColor;
+	doneButtonLayer.borderWidth = 1.f;
 }
 
 #pragma mark - Show
