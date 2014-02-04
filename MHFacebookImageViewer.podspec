@@ -8,7 +8,7 @@ Pod::Spec.new do |s|
     :git => 'https://github.com/michaelhenry/MHFacebookImageViewer.git',
     :tag => s.version.to_s
   }
-  s.platform = :ios, '5.0'
+  s.platform = :ios, '7.0'
   s.source_files = 'MHFBImageViewController/*.{h,m}'
   s.frameworks = 'UIKit', 'QuartzCore'
   s.requires_arc = true
