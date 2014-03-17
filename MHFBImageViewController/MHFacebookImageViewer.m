@@ -156,13 +156,12 @@ static const CGFloat kMinImageScale = 1.0f;
 }
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
 {
-    // Uncomment once iOS7 beta5 bugs for panGestures are worked out
-    //    UITableView * tableView = (UITableView*)self.superview;
-    //    if ( [tableView respondsToSelector:@selector(panGestureRecognizer)] &&
-    //         [otherGestureRecognizer isEqual:(tableView.panGestureRecognizer)] )
-    //    {
-    //        return NO;
-    //    }
+	Class panClass = [UIPanGestureRecognizer class];
+	if (gestureRecognizer.view == __imageView && [gestureRecognizer isKindOfClass:panClass] &&
+		[otherGestureRecognizer isKindOfClass:panClass] && [otherGestureRecognizer.view isKindOfClass:[UITableView class]]) {
+		return NO;
+	}
+	
     return YES;
 }
 
