@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.source_files = 'MHFBImageViewController/*.{h,m}'
   s.frameworks = 'UIKit', 'QuartzCore'
   s.requires_arc = true
-  s.dependency     'SDWebImage', '~> 3.5.2'
+  s.dependency     'SDWebImage', '~> 3.5'
   s.license      = {
     :type => 'MIT',
     :text => <<-LICENSE
