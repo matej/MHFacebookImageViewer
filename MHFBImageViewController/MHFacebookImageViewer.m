@@ -86,11 +86,18 @@ static const CGFloat kMinImageScale = 1.0f;
 
 @end
 
-@implementation MHFacebookImageViewerCell
+@implementation MHFacebookImageViewerCell {
+	CGAffineTransform _originalTransform;
+}
 
 - (void) loadAllRequiredViews{
     self.selectionStyle = UITableViewCellSelectionStyleNone;
     CGRect frame = [UIScreen mainScreen].bounds;
+	if (UIInterfaceOrientationIsLandscape([UIApplication sharedApplication].statusBarOrientation)) {
+		CGFloat temp = frame.size.height;
+		frame.size.height = frame.size.width;
+		frame.size.width = temp;
+	}
     __scrollView = [[UIScrollView alloc]initWithFrame:frame];
     __scrollView.delegate = self;
     __scrollView.backgroundColor = [UIColor clearColor];
@@ -109,7 +116,7 @@ static const CGFloat kMinImageScale = 1.0f;
         if(!__imageView){
             __imageView = [[UIImageView alloc]init];
             [__scrollView addSubview:__imageView];
-            __imageView.contentMode = UIViewContentModeScaleAspectFill;
+            __imageView.contentMode = UIViewContentModeScaleAspectFit;
         }
         __block UIImageView * _imageViewInTheBlock = __imageView;
         __block MHFacebookImageViewerCell * _justMeInsideTheBlock = self;
@@ -131,7 +138,8 @@ static const CGFloat kMinImageScale = 1.0f;
                 __imageView.frame = [self centerFrameFromImage:__imageView.image];
                 CGAffineTransform transf = CGAffineTransformIdentity;
                 // Root View Controller - move backward
-                _rootViewController.view.transform = CGAffineTransformScale(transf, 0.95f, 0.95f);
+				_originalTransform = _rootViewController.view.transform;
+                _rootViewController.view.transform = CGAffineTransformConcat(_originalTransform, CGAffineTransformScale(transf, 0.95f, 0.95f));
                 // Root View Controller - move forward
                 //                _viewController.view.transform = CGAffineTransformScale(transf, 1.05f, 1.05f);
                 _blackMask.alpha = 1;
@@ -207,12 +215,16 @@ static const CGFloat kMinImageScale = 1.0f;
     [self hideDoneButton];
     __scrollView.bounces = NO;
     CGSize windowSize = _blackMask.bounds.size;
+	if (UIInterfaceOrientationIsLandscape([UIApplication sharedApplication].statusBarOrientation)) {
+		CGFloat temp = windowSize.height;
+		windowSize.height = windowSize.width;
+		windowSize.width = temp;
+	}
     CGPoint currentPoint = [panGesture translationInView:__scrollView];
     CGFloat y = currentPoint.y + _panOrigin.y;
     CGRect frame = __imageView.frame;
     frame.origin = CGPointMake(0, y);
     __imageView.frame = frame;
-    
     CGFloat yDiff = abs((y + __imageView.frame.size.height/2) - windowSize.height/2);
     _blackMask.alpha = MAX(1 - yDiff/(windowSize.height/2),kMinBlackMaskAlpha);
 	
@@ -267,7 +279,7 @@ static const CGFloat kMinImageScale = 1.0f;
                 __imageView.frame = CGRectMake(__imageView.frame.origin.x, isGoingUp?-screenHeight:screenHeight, __imageView.frame.size.width, __imageView.frame.size.height);
             }
             CGAffineTransform transf = CGAffineTransformIdentity;
-            _rootViewController.view.transform = CGAffineTransformScale(transf, 1.0f, 1.0f);
+            _rootViewController.view.transform = _originalTransform;
             _blackMask.alpha = 0.0f;
 			
 			_viewController.prefersStatusBarHidden = NO;
@@ -486,8 +498,8 @@ static BOOL __usesDoneButtonByDefault = NO;
     if(!imageViewerCell) {
         CGRect windowFrame = [[UIScreen mainScreen] bounds];
         imageViewerCell = [[MHFacebookImageViewerCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellID];
-        imageViewerCell.transform = CGAffineTransformMakeRotation(M_PI_2);
-        imageViewerCell.frame = CGRectMake(0,0,windowFrame.size.width, windowFrame.size.height);
+		imageViewerCell.transform = CGAffineTransformMakeRotation(M_PI_2);
+		imageViewerCell.frame = CGRectMake(0,0,windowFrame.size.width, windowFrame.size.height);
         imageViewerCell.originalFrameRelativeToScreen = _originalFrameRelativeToScreen;
         imageViewerCell.viewController = self;
         imageViewerCell.blackMask = _blackMask;
@@ -527,33 +539,42 @@ static BOOL __usesDoneButtonByDefault = NO;
 - (void)loadView
 {
     [super loadView];
+	BOOL landscape = UIInterfaceOrientationIsLandscape([UIApplication sharedApplication].statusBarOrientation);
     _statusBarStyle = [[UIApplication sharedApplication] statusBarStyle];
     [UIApplication sharedApplication].statusBarHidden = YES;
     CGRect windowBounds = [[UIScreen mainScreen] bounds];
-    
+	self.view.frame = windowBounds;
+	
     // Compute Original Frame Relative To Screen
-    CGRect newFrame = [_senderView convertRect:windowBounds toView:nil];
-    newFrame.origin = CGPointMake(newFrame.origin.x, newFrame.origin.y);
-    newFrame.size = _senderView.frame.size;
+	CGRect bounds = _senderView.bounds;
+    CGRect newFrame = [_senderView convertRect:_senderView.bounds toView:nil];
+	if (landscape) {
+		newFrame.origin = CGPointMake(newFrame.origin.y, newFrame.origin.x);
+		newFrame.origin.x = windowBounds.size.height - newFrame.origin.x - newFrame.size.width;
+	}
+    
+//    newFrame.size = _senderView.frame.size;
     _originalFrameRelativeToScreen = newFrame;
     
-    self.view = [[UIView alloc] initWithFrame:windowBounds];
-    NSLog(@"WINDOW :%@",NSStringFromCGRect(windowBounds));
-    self.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    
     // Add a Tableview
-    _tableView = [[UITableView alloc]initWithFrame:windowBounds style:UITableViewStylePlain];
+    _tableView = [[UITableView alloc]initWithFrame:self.view.bounds style:UITableViewStylePlain];
     [self.view addSubview:_tableView];
-    //rotate it -90 degrees
-    _tableView.transform = CGAffineTransformMakeRotation(-M_PI_2);
-    _tableView.frame = CGRectMake(0,0,windowBounds.size.width,windowBounds.size.height);
+    // rotate it
+	if (landscape) {
+		_tableView.transform = CGAffineTransformMakeRotation(M_PI);
+	} else {
+		_tableView.transform = CGAffineTransformMakeRotation(-M_PI_2);
+		_tableView.frame = CGRectMake(0,0,windowBounds.size.width,windowBounds.size.height);
+	}
+    
     _tableView.pagingEnabled = YES;
     _tableView.dataSource = self;
     _tableView.delegate = self;
     _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
     _tableView.backgroundColor = [UIColor clearColor];
     [_tableView setShowsVerticalScrollIndicator:NO];
-    [_tableView setContentOffset:CGPointMake(0, _initialIndex * windowBounds.size.width)];
+	CGFloat offset = _initialIndex * (landscape ? windowBounds.size.height : windowBounds.size.width);
+    [_tableView setContentOffset:CGPointMake(0, offset)];
     
     _blackMask = [[UIView alloc] initWithFrame:windowBounds];
     _blackMask.backgroundColor = [UIColor blackColor];
@@ -706,4 +727,3 @@ static BOOL __usesDoneButtonByDefault = NO;
 
 
 @end
-
