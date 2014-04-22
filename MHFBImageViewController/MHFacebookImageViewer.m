@@ -48,6 +48,7 @@ static const CGFloat kMinImageScale = 1.0f;
 
 @property (nonatomic, strong) UIButton *doneButton;
 @property (nonatomic, assign) BOOL prefersStatusBarHidden;
+@property(nonatomic,assign,readonly) CGAffineTransform originalTransform;
 
 @end
 
@@ -86,9 +87,7 @@ static const CGFloat kMinImageScale = 1.0f;
 
 @end
 
-@implementation MHFacebookImageViewerCell {
-	CGAffineTransform _originalTransform;
-}
+@implementation MHFacebookImageViewerCell
 
 - (void) loadAllRequiredViews{
     self.selectionStyle = UITableViewCellSelectionStyleNone;
@@ -138,8 +137,7 @@ static const CGFloat kMinImageScale = 1.0f;
                 __imageView.frame = [self centerFrameFromImage:__imageView.image];
                 CGAffineTransform transf = CGAffineTransformIdentity;
                 // Root View Controller - move backward
-				_originalTransform = _rootViewController.view.transform;
-                _rootViewController.view.transform = CGAffineTransformConcat(_originalTransform, CGAffineTransformScale(transf, 0.95f, 0.95f));
+                _rootViewController.view.transform = CGAffineTransformConcat(self.viewController.originalTransform, CGAffineTransformScale(transf, 0.95f, 0.95f));
                 // Root View Controller - move forward
                 //                _viewController.view.transform = CGAffineTransformScale(transf, 1.05f, 1.05f);
                 _blackMask.alpha = 1;
@@ -278,8 +276,7 @@ static const CGFloat kMinImageScale = 1.0f;
             }else {
                 __imageView.frame = CGRectMake(__imageView.frame.origin.x, isGoingUp?-screenHeight:screenHeight, __imageView.frame.size.width, __imageView.frame.size.height);
             }
-            CGAffineTransform transf = CGAffineTransformIdentity;
-            _rootViewController.view.transform = _originalTransform;
+            _rootViewController.view.transform = self.viewController.originalTransform;
             _blackMask.alpha = 0.0f;
 			
 			_viewController.prefersStatusBarHidden = NO;
@@ -613,6 +610,7 @@ static BOOL __usesDoneButtonByDefault = NO;
 - (void)presentFromViewController:(UIViewController *)controller
 {
     _rootViewController = controller;
+	_originalTransform = controller.view.transform;
     [[[[UIApplication sharedApplication]windows]objectAtIndex:0]addSubview:self.view];
     [controller addChildViewController:self];
     [self didMoveToParentViewController:controller];
