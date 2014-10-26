@@ -75,7 +75,7 @@
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
     UIImageView * imageView = (UIImageView*)[cell viewWithTag:1];
    
-    [imageView setImage:[UIImage imageNamed:[NSString stringWithFormat:@"%i_iphone",indexPath.row]]];
+    [imageView setImage:[UIImage imageNamed:[NSString stringWithFormat:@"%li_iphone",(long)indexPath.row]]];
     imageView.contentMode = UIViewContentModeScaleAspectFill;
     
     [imageView setupImageViewerWithDatasource:self initialIndex:indexPath.row onOpen:^{
@@ -93,12 +93,12 @@
 }
 
 -  (NSURL*) imageURLAtIndex:(NSInteger)index imageViewer:(MHFacebookImageViewer *)imageViewer {
-    return [NSURL URLWithString:[NSString stringWithFormat:@"http://iamkel.net/projects/mhfacebookimageviewer/%i.png",index]];
+    return [NSURL URLWithString:[NSString stringWithFormat:@"http://iamkel.net/projects/mhfacebookimageviewer/%li.png",(long)index]];
 }
 
 - (UIImage*) imageDefaultAtIndex:(NSInteger)index imageViewer:(MHFacebookImageViewer *)imageViewer{
-    NSLog(@"INDEX IS %i",index);
-    return [UIImage imageNamed:[NSString stringWithFormat:@"%i_iphone",index]];
+    NSLog(@"INDEX IS %li",(long)index);
+    return [UIImage imageNamed:[NSString stringWithFormat:@"%li_iphone",(long)index]];
 }
 
 @end

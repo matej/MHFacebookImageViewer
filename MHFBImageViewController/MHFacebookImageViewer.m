@@ -121,7 +121,7 @@ static const CGFloat kMinImageScale = 1.0f;
         __block MHFacebookImageViewerCell * _justMeInsideTheBlock = self;
         __block UIScrollView * _scrollViewInsideBlock = __scrollView;
         
-		[__imageView setImageWithURL:imageURL placeholderImage:defaultImage options:SDWebImageRetryFailed completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType) {
+		[__imageView sd_setImageWithURL:imageURL placeholderImage:defaultImage options:SDWebImageRetryFailed completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
 			if (error) {
 				NSLog(@"Image From URL Not loaded");
 				return;
@@ -346,7 +346,7 @@ static const CGFloat kMinImageScale = 1.0f;
     [self centerScrollViewContents];
 }
 
-- (void) scrollViewDidEndZooming:(UIScrollView *)scrollView withView:(UIView *)view atScale:(float)scale {
+- (void) scrollViewDidEndZooming:(UIScrollView *)scrollView withView:(UIView *)view atScale:(CGFloat)scale {
     _isAnimating = NO;
 }
 
@@ -543,7 +543,6 @@ static BOOL __usesDoneButtonByDefault = NO;
 	self.view.frame = windowBounds;
 	
     // Compute Original Frame Relative To Screen
-	CGRect bounds = _senderView.bounds;
     CGRect newFrame = [_senderView convertRect:_senderView.bounds toView:nil];
 	if (landscape) {
 		newFrame.origin = CGPointMake(newFrame.origin.y, newFrame.origin.x);

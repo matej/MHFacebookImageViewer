@@ -6,8 +6,8 @@
 //  Copyright (c) 2013 Michael Henry Pantaleon. All rights reserved.
 //
 
-#import <SenTestingKit/SenTestingKit.h>
+#import <XCTest/XCTest.h>
 
-@interface FBImageViewController_DemoTests : SenTestCase
+@interface FBImageViewController_DemoTests : XCTestCase
 
 @end
