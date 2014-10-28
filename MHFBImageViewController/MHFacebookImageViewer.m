@@ -48,7 +48,8 @@ static NSString * const cellID = @"mhfacebookImageViewerCell";
 
 @property (nonatomic, strong) UIButton *doneButton;
 @property (nonatomic, assign) BOOL prefersStatusBarHidden;
-@property(nonatomic,assign,readonly) CGAffineTransform originalTransform;
+@property (nonatomic, strong) UIImageView *renderedContentImageView;
+@property (nonatomic, strong) UIView *contentDimmingView;
 
 @end
 
@@ -132,9 +133,8 @@ static NSString * const cellID = @"mhfacebookImageViewerCell";
             __imageView.frame = _originalFrameRelativeToScreen;
             [UIView animateWithDuration:0.4 delay:0 usingSpringWithDamping:1.0 initialSpringVelocity:0 options:0 animations:^{
                 __imageView.frame = [self centerFrameFromImage:__imageView.image];
-                CGAffineTransform transf = CGAffineTransformIdentity;
-                // Root View Controller - move backward
-                _rootViewController.view.transform = CGAffineTransformConcat(self.viewController.originalTransform, CGAffineTransformScale(transf, 0.95f, 0.95f));
+                // Move content backward
+                _justMeInsideTheBlock.viewController.renderedContentImageView.transform = CGAffineTransformMakeScale(0.95f, 0.95f);
                 _blackMask.alpha = 1;
             }   completion:^(BOOL finished) {
                 if (finished) {
@@ -267,7 +267,7 @@ static NSString * const cellID = @"mhfacebookImageViewerCell";
             }else {
                 __imageView.frame = CGRectMake(__imageView.frame.origin.x, isGoingUp?-screenHeight:screenHeight, __imageView.frame.size.width, __imageView.frame.size.height);
             }
-            _rootViewController.view.transform = self.viewController.originalTransform;
+            _viewController.renderedContentImageView.transform = CGAffineTransformIdentity;
             _blackMask.alpha = 0.0f;
 
             _viewController.prefersStatusBarHidden = NO;
@@ -495,6 +495,17 @@ static BOOL __usesDoneButtonByDefault = NO;
     CGRect newFrame = [_senderView convertRect:_senderView.bounds toView:nil];
     _originalFrameRelativeToScreen = newFrame;
 
+    // Add content dimming view
+    _contentDimmingView = [[UIView alloc] initWithFrame:windowBounds];
+    _contentDimmingView.backgroundColor = [UIColor blackColor];
+    _contentDimmingView.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
+    [self.view addSubview:_contentDimmingView];
+
+    // Add rendered view hierarchy
+    _renderedContentImageView = [[UIImageView alloc] initWithFrame:windowBounds];
+    _renderedContentImageView.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
+    [self.view addSubview:_renderedContentImageView];
+
     // Add mask view
     _blackMask = [[UIView alloc] initWithFrame:windowBounds];
     _blackMask.backgroundColor = [UIColor blackColor];
@@ -547,11 +558,25 @@ static BOOL __usesDoneButtonByDefault = NO;
 
 - (void)presentFromViewController:(UIViewController *)controller {
     _rootViewController = controller;
-    _originalTransform = controller.view.transform;
+
     UIWindow *window = [[[UIApplication sharedApplication] windows] firstObject];
     [window addSubview:self.view];
+
+    // Needs to be called after the view is loaded
+    _renderedContentImageView.image = [self snapshot:controller.view];
+
     [controller addChildViewController:self];
     [self didMoveToParentViewController:controller];
+}
+
+- (UIImage *)snapshot:(UIView *)view {
+
+    UIGraphicsBeginImageContextWithOptions(view.bounds.size, YES, 0);
+    [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:YES];
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+
+    return image;
 }
 
 #pragma mark - Layout
